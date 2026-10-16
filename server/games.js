@@ -1,10 +1,21 @@
+import { initExtraGame, inputExtraGame, tickExtraGame } from './extra-games.js';
+import { initCourtGame, inputCourtGame, tickCourtGame } from './court-games.js';
+import { initGolf, inputGolf, tickGolf } from './golf.js';
+import { initMoles, inputMoles, tickMoles } from './moles.js';
+
 export const GAMES = [
+  { id: 'golf', name: 'Mini Golf', category: 'Spor', min: 1, max: 8, duration: 150, icon: '⚑', color: '#9fdb9b', description: 'Üç parkur, en az vuruş!', control: 'Nişan al & vur', instruction: 'Herkes kendi topuyla aynı anda oynar. Açı ve gücü ayarla; top durunca yeniden vur. Her parkur 45 saniye ve en fazla 8 vuruş. Tek vuruşta deliğe sokmak 80 puan; her ek vuruş ödülü 10 azaltır. Üç parkurun toplam puanı kazanır.' },
+  { id: 'moles', name: 'Köstebek Avı', category: 'Parti', min: 1, max: 8, duration: 90, icon: '✹', color: '#e2bc94', description: 'Hızlı parmaklar, mutlu bahçe.', control: 'Dokuz düğme', instruction: 'Telefonundaki 3×3 bahçede köstebeklere dokun. Normal köstebek 10, altın köstebek 25 puan. Çiçeğe dokunmak 5 puan götürür; puan sıfırın altına düşmez. Her hedefe herkes bir kez puan alabilir.' },
   { id: 'sling', name: 'Sapan Savaşları', category: 'Nişan & fizik', min: 1, max: 8, duration: 120, icon: '◉', color: '#b9ec72', description: 'Ger, nişan al, kaleyi dağıt!', control: 'Çek ve bırak', instruction: 'Sıran geldiğinde telefondaki topu geriye çekip bırak. Ahşap bloklar 10, yıldızlar 30 puan. Her atıştan sonra sıra değişir.' },
   { id: 'archery', name: 'Okçu Arenası', category: 'Nişan & fizik', min: 2, max: 8, duration: 90, icon: '➶', color: '#c5b4fa', description: 'Biraz açı, biraz güç, tam isabet.', control: 'Çek ve bırak', instruction: 'Sıran geldiğinde yayı çekip bırak. Okun rakibine değerse 25 puan! Karakterler her atıştan sonra yer değiştirir; kimse elenmez.' },
   { id: 'snake', name: 'Yılan Yarışı', category: 'Nostalji', min: 1, max: 8, duration: 90, icon: '⌁', color: '#f4b96b', description: 'Klasik yılan, kalabalık sofra.', control: 'Yön tuşları', instruction: 'Yön tuşlarıyla elmalara ulaş. Her elma 10 puan. Duvara veya bir yılana çarparsan kısalıp yeniden başlarsın.' },
   { id: 'pong', name: 'Raket Kapışması', category: 'Nostalji', min: 1, max: 8, duration: 90, icon: '▰', color: '#89c7f4', description: 'Topu yakala, tuğlaları patlat.', control: 'Parmağınla kaydır', instruction: 'Herkes kendi renkli sahasında yarışır. Parmağını kaydırıp raketini hareket ettir. Her tuğla 10 puan. Kaçan top yeniden gelir.' },
   { id: 'draw', name: 'Karalama Kapışması', category: 'Parti', min: 2, max: 8, duration: 180, icon: '✎', color: '#f5a7bb', description: 'Bir çizgi, bin komik tahmin.', control: 'Çiz & tahmin et', instruction: 'Çizer gizli görevi telefonunda görür. Diğerleri telefonlarından tahmin yazar. Doğru tahmin 30, çizere 15 puan. Her çizim için 40 saniyeniz var.' },
   { id: 'balance', name: 'Denge Ekibi', category: 'Birlikte', min: 1, max: 8, duration: 90, icon: '◎', color: '#8bdbc6', description: 'Hep birlikte, aynı dengede.', control: 'Dokun veya eğ', instruction: 'Herkesin kumandası topun hareketine katkıda bulunur. Topu yeşil hedefe götürün, kırmızı deliklerden uzak tutun. Ortak hedef: mümkün olduğunca çok yıldız!' },
+  { id: 'river', name: 'Nehir Devriyesi', category: 'Nostalji', min: 1, max: 8, duration: 120, icon: '✦', color: '#a9b9ff', description: 'Kıyılardan kaç, filoyu koru.', control: 'Parmağınla kaydır', instruction: 'Uçağını kaydır; otomatik ateş eder. Kıvrılan nehrin kıyılarına ve pembe atışlara çarpma. Tanklar ve uçaklar 10 puan kazandırır. Takımın 6 ortak kalkanı var; tamamlanan etap 1 kalkan kazandırır.' },
+  { id: 'memory', name: 'Renk Hafızası', category: 'Parti', min: 1, max: 8, duration: 120, icon: '▦', color: '#f3d78c', description: 'İzle, hatırla, sırayla dokun.', control: 'Renk düğmeleri', instruction: 'TV’de yanan renkleri sırayla hatırla. “Sıra sende” yazınca telefonunda aynı sıraya dokun. Doğru seri, uzunluğunun 10 katı puan kazandırır. Yanlış yapsan da sonraki turda yeniden oynarsın.' },
+  { id: 'volley', name: 'Plaj Voleybolu', category: 'Spor', min: 2, max: 8, duration: 120, icon: '◒', color: '#f5cb8e', description: 'Zıpla, karşı sahaya gönder!', control: 'Kaydır & zıpla', instruction: 'Oyuncular sırayla mavi ve mercan takıma ayrılır. Kaydırarak kendi sahanda hareket et, zıplayıp topu rakip sahaya gönder. Top yere değerse karşı takım sayı alır. İlk 7 sayı veya süre sonunda en yüksek skor kazanır.' },
+  { id: 'hockey', name: 'Buz Hokeyi', category: 'Spor', min: 2, max: 8, duration: 120, icon: '◉', color: '#a3dae8', description: 'Buzda kay, diski kaleye yolla.', control: 'Dokunmatik çubuk', instruction: 'Mavi takım soldaki, mercan takım sağdaki kaleyi korur. Telefonundaki çubukla kayarak hareket et; diske dokununca vuruş yaparsın. İlk 7 gol veya süre sonunda yüksek skor kazanır. Tek sayıda oyuncuda takımlar bir kişi farklı olur.' },
 ];
 
 export const COLORS = ['#b9ec72', '#c5b4fa', '#f4b96b', '#89c7f4', '#f5a7bb', '#8bdbc6', '#f9df77', '#fda28b'];
@@ -25,6 +36,10 @@ export function createGame(id, players, now = Date.now()) {
   if (id === 'pong') g.lanes = ids.map(id => ({ id, paddle: .5, ball: { x: .5, y: .65, vx: .22, vy: -.4 }, bricks: Array.from({ length: 15 }, (_, i) => ({ x: (i % 5) * .18 + .05, y: Math.floor(i / 5) * .08 + .12, alive: true })) }));
   if (id === 'draw') Object.assign(g, { word: words[Math.floor(rand(0, words.length))], strokes: [], roundEnd: now + 40000, guessed: [], guesses: [], round: 1 });
   if (id === 'balance') Object.assign(g, { ball: { x: 500, y: 300, vx: 0, vy: 0 }, target: { x: 800, y: 180 }, holes: [{ x: 340, y: 200 }, { x: 650, y: 390 }, { x: 220, y: 400 }], inputs: {}, stars: 0 });
+  initExtraGame(g, now);
+  initCourtGame(g, now);
+  initGolf(g, now);
+  initMoles(g, now);
   return g;
 }
 
@@ -32,7 +47,11 @@ function nextTurn(g, now) { g.turn = (g.turn + 1) % g.ids.length; g.turnAt = now
 export function currentPlayer(g) { return g.ids[g.turn]; }
 
 export function inputGame(g, id, input, now = Date.now()) {
-  if (!g.ids.includes(id) || !input || typeof input !== 'object') return;
+  if (g.finished || !g.ids.includes(id) || !input || typeof input !== 'object') return;
+  inputExtraGame(g, id, input, now);
+  inputCourtGame(g, id, input, now);
+  inputGolf(g, id, input, now);
+  inputMoles(g, id, input, now);
   if (['sling', 'archery'].includes(g.id) && input.type === 'shoot' && currentPlayer(g) === id && !g.projectile) {
     const angle = clamp(input.angle, 12, 82) * Math.PI / 180;
     const power = clamp(input.power, .15, 1);
@@ -64,6 +83,12 @@ export function inputGame(g, id, input, now = Date.now()) {
 }
 
 export function tickGame(g, dt, now = Date.now(), connected = g.ids) {
+  if (g.finished) return;
+  connected = connected.filter(id => g.ids.includes(id));
+  tickExtraGame(g, dt, now, connected);
+  tickCourtGame(g, dt, now, connected);
+  tickGolf(g, dt, now, connected);
+  tickMoles(g, dt, now);
   g.tick++;
   if (['sling', 'archery'].includes(g.id)) {
     if (!g.projectile && (now - g.turnAt > 16000 || !connected.includes(currentPlayer(g)))) nextTurn(g, now);
@@ -136,6 +161,17 @@ export function tickGame(g, dt, now = Date.now(), connected = g.ids) {
 
 export function publicGame(g) {
   if (!g) return null;
-  const { word, inputs, ...safe } = g;
+  const { word, inputs, pattern, controls, ...safe } = g;
   return safe;
+}
+
+// Move deadlines together while simulation is paused; never advance physics.
+export function shiftGameClock(g, elapsed) {
+  for (const key of ['start', 'end', 'turnAt', 'roundEnd', 'stageAt', 'stageEnd', 'lastShot', 'serveAt', 'spawnAt']) {
+    if (typeof g[key] === 'number') g[key] += elapsed;
+  }
+  // A phone held still before a pause must not keep pushing after resuming.
+  if (g.inputs) g.inputs = {};
+  if (g.controls) g.controls = {};
+  if (g.moles) g.moles.forEach(m => { m.expiresAt += elapsed; });
 }

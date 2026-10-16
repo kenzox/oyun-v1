@@ -4,3 +4,24 @@
 @media(max-width:1100px){header{padding:0 24px}.shell{grid-template-columns:minmax(0,1fr) 250px}.main{padding:26px 22px}.sidebar{padding:25px 16px}.hero h2{font-size:31px}.hero-copy{padding:25px}.hero-actions{gap:8px}.hero .meta{font-size:9px}.tabs{gap:1px}.tab{padding:7px;font-size:10px}.cards{gap:11px}.card-copy{padding:12px}.card-copy h3{font-size:14px}.section-heading{align-items:flex-start;gap:12px}.card-art{height:110px}}
 @media(max-width:800px){header{height:75px;padding:0 19px}.brand small{display:none}.brand{font-size:32px}.top-actions .connection{display:none}.shell{display:flex;flex-direction:column}.main{padding:25px 18px}.sidebar{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:18px}.sidebar-title{grid-column:1/-1}.join-box{grid-row:2/4}.sidebar-tip{grid-column:2}.intro .pill{display:none}.intro h1{font-size:34px}.hero{min-height:245px;grid-template-columns:1.2fr 1fr}.hero-copy{padding:22px}.hero h2{font-size:31px}.hero .meta{display:none}.section-heading{flex-direction:column}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.card-art{height:125px}.card-copy h3{font-size:16px}.bottom-note{line-height:1.7}.hero-art:before{right:-60px}.game-top h1{font-size:23px}.timer{font-size:25px}.game-message{font-size:11px}.scores .player{min-width:120px}.results h2{font-size:30px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* Phone controls for the expanded game shelf. */
+.shot-settings{margin-top:24px;padding:18px;background:#202832;border:1px solid #3c4654;border-radius:14px}
+.mobile .shot-settings input[type=range]{padding:0;height:32px;margin:0 0 18px;accent-color:var(--lime);touch-action:pan-y}
+.shot-settings label{display:flex;justify-content:space-between}.shot-settings output{color:var(--lime);font-weight:700}
+.team-hud{text-align:center;font-family:'Outfit',system-ui,sans-serif;font-size:23px;color:#e4eaf9;padding:17px 8px;margin-bottom:15px;background:#2b3443;border-radius:12px}
+.team-identity{padding:12px;text-align:center;border:1px solid var(--team);border-radius:12px;margin-bottom:12px;color:var(--team);font-weight:700}
+.jump-button{height:90px;font-size:25px!important;touch-action:manipulation;user-select:none}
+.memory-controls{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.memory-tile{border:2px solid var(--tile);background:color-mix(in srgb,var(--tile) 20%,#232a35);border-radius:18px;min-height:132px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--tile);touch-action:manipulation;user-select:none}
+.memory-tile span{font-size:43px;line-height:1}.memory-tile small{font-size:13px}.memory-tile:active:not(:disabled){background:var(--tile);color:#25303b;transform:scale(.97)}
+.memory-tile:disabled{opacity:.4}.memory-controls + .pad-label{line-height:1.7}
+#pause-button{white-space:nowrap;font-size:12px}.game-top{flex-wrap:wrap}
+@media(max-width:1100px){.section-heading{flex-wrap:wrap}.tabs{gap:4px}.tab{padding:8px 10px}}
+@media(max-width:430px){.mobile .game-top{gap:8px}.mobile .control-title{font-size:23px!important}.memory-tile{min-height:110px}}
+
+.mole-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}
+.mole-button{min-height:105px;border:2px solid #576849;border-radius:22px;background:#2a3b2c;color:#d6d0b1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;touch-action:manipulation;user-select:none}
+.mole-symbol{font-size:40px;min-height:46px;line-height:1.1}.mole-button small{font-size:12px}.mole-button.mole{background:#604b3a;border-color:#d9b18c}.mole-button.star{background:#5c522f;border-color:#f5d16f}.mole-button.flower{background:#3c4f30;border-color:#b4d386}.mole-button:active:not(:disabled){transform:scale(.94)}.mole-button.empty:disabled{opacity:1}.mole-button.claimed{opacity:.5}.mole-feedback{min-height:48px;padding:12px;text-align:center;color:#e4c59e;font-size:14px;background:#302e28;border-radius:12px}
+.mobile .shot-settings #golf-angle,.mobile .shot-settings #golf-power{margin-bottom:12px}.shot-settings .pad-label{font-size:10px;line-height:1.6;margin-bottom:18px}
+@media(max-width:360px){.mole-controls{gap:8px}.mole-button{min-height:87px}.mole-symbol{font-size:32px}}

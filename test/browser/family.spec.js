@@ -1,12 +1,17 @@
 import { test, expect } from '@playwright/test';
+import { GAMES } from '../../server/games.js';
 
-test('TV creates a room, two phones join, all six games start and reconnect works', async ({ browser, page }) => {
+test('TV creates a room, two phones join, all registered games start, pause and reconnect work', async ({ browser, page }) => {
+  test.setTimeout(120000);
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await page.getByRole('button', { name: 'Oda oluştur' }).click();
   await expect(page.locator('.room-code')).toBeVisible();
   const code = await page.locator('.room-code').textContent();
   const contexts = await Promise.all([browser.newContext({ viewport: { width: 390, height: 844 } }), browser.newContext({ viewport: { width: 390, height: 844 } })]);
   const phones = await Promise.all(contexts.map(c => c.newPage()));
+  phones.forEach(phone => phone.on('pageerror', error => errors.push(error.message)));
   for (const [i, phone] of phones.entries()) {
     await phone.goto(`/?room=${code}`);
     await phone.getByLabel('Sana ne diyelim?').fill(['Ada', 'Ege'][i]);
@@ -16,14 +21,53 @@ test('TV creates a room, two phones join, all six games start and reconnect work
   await expect(page.locator('#player-count')).toHaveText('2 / 8 bağlı');
   await phones[0].reload(); await expect(phones[0].getByText('Herkes hazır mı?')).toBeVisible();
   await expect(page.locator('#player-list .player')).toHaveCount(2);
-  for (const id of ['sling', 'archery', 'snake', 'pong', 'draw', 'balance']) {
+  await expect(page.locator('.game-card')).toHaveCount(GAMES.length);
+  for (const { id } of GAMES) {
     await page.locator(`[data-game="${id}"]`).click();
     await page.getByRole('button', { name: 'Oyunu başlat' }).click();
     await expect(page.locator('#board')).toBeVisible();
     await expect(phones[0].locator('#timer')).toBeVisible();
+    if (id === 'golf') {
+      await phones[0].getByRole('button', { name: 'Topa vur' }).click();
+      await expect(phones[0].getByRole('button', { name: 'Topa vur' })).toBeDisabled();
+      await expect(page.locator('#scores .score').first()).toHaveText('80', { timeout: 10000 });
+      await expect(phones[0].locator('#golf-status')).toContainText('Deliğe girdi');
+    }
+    if (id === 'moles') {
+      await expect(phones[0].locator('[data-mole]')).toHaveCount(9);
+      await expect(async () => {
+        await phones[0].locator('.mole-button.mole:not(:disabled)').first().click({ timeout: 3000 });
+        await expect(phones[0].locator('#my-score')).not.toHaveText('0', { timeout: 1000 });
+      }).toPass({ timeout: 10000 });
+    }
     if (id === 'sling') {
-      await phones[0].getByRole('button', { name: '45° orta güçte atış yap' }).click();
+      await page.getByRole('button', { name: 'Duraklat' }).click();
+      await expect(phones[0].getByText('Mola zamanı.', { exact: false })).toBeVisible();
+      await expect(phones[0].getByRole('button', { name: 'Atış yap' })).toBeDisabled();
+      const frozenTime = await page.locator('#timer').textContent();
+      await page.waitForTimeout(1200);
+      await expect(page.locator('#timer')).toHaveText(frozenTime);
+      await page.getByRole('button', { name: 'Devam et' }).click();
+      await phones[0].getByRole('button', { name: 'Atış yap' }).click();
       await expect(page.locator('#scores .score').first()).not.toHaveText('0', { timeout: 8000 });
+    }
+    if (id === 'memory') {
+      await expect(phones[0].locator('[data-tile]')).toHaveCount(4);
+      await expect(phones[0].locator('[data-tile]').first()).toBeDisabled();
+      await expect(phones[0].locator('[data-tile]').first()).toBeEnabled({ timeout: 6000 });
+      await phones[0].locator('[data-tile]').first().click();
+      await expect(phones[0].locator('#memory-status')).toContainText(/1 \/ 2|Bu kez olmadı/);
+    }
+    if (id === 'river') {
+      await expect(phones[0].locator('#river-hud')).toContainText('kalkan');
+      await phones[0].locator('#ship-position').focus();
+      await phones[0].locator('#ship-position').press('ArrowRight');
+    }
+    if (id === 'volley' || id === 'hockey') {
+      await expect(phones[0].locator('.team-identity')).toContainText('Mavi takım');
+      await expect(phones[1].locator('.team-identity')).toContainText('Mercan takım');
+      if (id === 'volley') await phones[0].getByRole('button', { name: 'Zıpla!' }).click();
+      else await expect(phones[0].locator('#hockey-pad')).toBeVisible();
     }
     if (id === 'draw') {
       const word = phones[0].locator('#secret-word'); await expect(word).not.toHaveText('Görev geliyor…');
@@ -36,5 +80,6 @@ test('TV creates a room, two phones join, all six games start and reconnect work
     await page.getByRole('button', { name: 'Oyun rafına dön' }).click();
     await expect(page.locator('.cards')).toBeVisible();
   }
+  expect(errors).toEqual([]);
   await Promise.all(contexts.map(c => c.close()));
 });

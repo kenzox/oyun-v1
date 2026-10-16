@@ -5,7 +5,8 @@ import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import QRCode from 'qrcode';
-import { GAMES, COLORS, createGame, tickGame, inputGame, publicGame, currentPlayer } from './games.js';
+import { GAMES, COLORS, createGame, inputGame, publicGame, currentPlayer } from './games.js';
+import { advanceRoom, pauseReason } from './session.js';
 
 const token = () => randomBytes(24).toString('hex');
 const equal = (a, b) => typeof a === 'string' && typeof b === 'string' && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a), Buffer.from(b));
@@ -20,7 +21,7 @@ export function makeServer({ port = 3000 } = {}) {
   app.post('/api/rooms', (_req, res) => {
     if (rooms.size >= 100) return res.status(429).json({ error: 'Çok fazla açık oda var. Biraz sonra tekrar deneyin.' });
     let code; do { code = Array.from(randomBytes(6), n => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n % 31]).join(''); } while (rooms.has(code));
-    const room = { code, hostToken: token(), host: null, players: [], phase: 'lobby', selected: 'sling', game: null, touched: Date.now(), lastTick: Date.now() };
+    const room = { code, hostToken: token(), host: null, players: [], phase: 'lobby', paused: false, selected: 'sling', game: null, touched: Date.now(), lastTick: Date.now() };
     rooms.set(code, room); res.json({ code, hostToken: room.hostToken });
   });
   app.get('/api/qr', async (req, res) => {
@@ -29,7 +30,7 @@ export function makeServer({ port = 3000 } = {}) {
     if (!rooms.has(code) || ![...addresses(), `http://localhost:${http.address()?.port || port}`, `http://127.0.0.1:${http.address()?.port || port}`].includes(base)) return res.status(400).send('Geçersiz oda veya adres');
     res.type('svg').send(await QRCode.toString(`${base}/?room=${code}`, { type: 'svg', margin: 1, color: { dark: '#20232A', light: '#FFFFFF' } }));
   });
-  const state = room => ({ code: room.code, phase: room.phase, selected: room.selected, hostOnline: !!room.host, players: room.players.map(({ secret, socket, ...p }) => ({ ...p, connected: !!socket })), game: publicGame(room.game), serverNow: Date.now() });
+  const state = room => ({ code: room.code, phase: room.phase, selected: room.selected, paused: room.paused, pauseReason: pauseReason(room), hostOnline: !!room.host, players: room.players.map(({ secret, socket, ...p }) => ({ ...p, connected: !!socket })), game: publicGame(room.game), serverNow: Date.now() });
   function broadcast(room) {
     io.to(room.code).emit('state', state(room));
     if (room.phase === 'playing' && room.game?.id === 'draw') {
@@ -44,6 +45,7 @@ export function makeServer({ port = 3000 } = {}) {
       if (socket.data.room) return ack({ error: 'Zaten bir odadasınız.' });
       const room = rooms.get(String(data.code || '').toUpperCase());
       if (!room) return ack({ error: 'Oda bulunamadı. TV’deki yeni QR kodu okutun.' });
+      advanceRoom(room, Date.now());
       if (equal(data.hostToken, room.hostToken)) {
         if (room.host && room.host !== socket.id) io.sockets.sockets.get(room.host)?.disconnect(true);
         room.host = socket.id; socket.data.role = 'host';
@@ -69,13 +71,16 @@ export function makeServer({ port = 3000 } = {}) {
       if (!data || typeof data !== 'object') return ack({ error: 'Geçersiz oyun isteği.' });
       const r = rooms.get(socket.data.room);
       if (!r || r.host !== socket.id) return ack({ error: 'Bu işlem TV ekranından yapılabilir.' });
+      advanceRoom(r, Date.now());
       if (data.type === 'select' && GAMES.some(g => g.id === data.id) && r.phase !== 'playing') r.selected = data.id;
       if (data.type === 'start') {
+        if (r.phase === 'playing') return ack({ error: 'Yeni oyun için önce bu turdan çıkın.' });
         const meta = GAMES.find(g => g.id === r.selected); const active = r.players.filter(p => p.socket);
         if (active.length < meta.min) return ack({ error: `Bu oyun için en az ${meta.min} bağlı oyuncu gerekiyor.` });
-        r.game = createGame(r.selected, active); r.phase = 'playing'; r.lastTick = Date.now();
+        r.game = createGame(r.selected, active); r.phase = 'playing'; r.paused = false; r.lastTick = Date.now();
       }
-      if (data.type === 'lobby') { r.phase = 'lobby'; r.game = null; }
+      if (data.type === 'pause' && r.phase === 'playing' && typeof data.paused === 'boolean') r.paused = data.paused;
+      if (data.type === 'lobby') { r.phase = 'lobby'; r.game = null; r.paused = false; }
       if (data.type === 'remove' && r.phase === 'lobby') {
         const p = r.players.find(p => p.id === data.id);
         if (p && !p.socket) r.players = r.players.filter(player => player.id !== p.id);
@@ -84,7 +89,8 @@ export function makeServer({ port = 3000 } = {}) {
     });
     socket.on('input', data => {
       const r = rooms.get(socket.data.room); const now = Date.now();
-      if (!r || r.phase !== 'playing' || !r.host || socket.data.role !== 'player') return;
+      if (!r || r.phase !== 'playing' || pauseReason(r) || socket.data.role !== 'player') return;
+      if (now >= r.game.end) return;
       if (now - (socket.data.window || 0) > 1000) { socket.data.window = now; socket.data.count = 0; }
       if ((socket.data.count = (socket.data.count || 0) + 1) > 80) return;
       if (data?.type === 'guess') { if (now - (socket.data.guessAt || 0) < 700) return; socket.data.guessAt = now; }
@@ -92,6 +98,7 @@ export function makeServer({ port = 3000 } = {}) {
     });
     socket.on('disconnect', () => {
       const r = rooms.get(socket.data.room); if (!r) return;
+      advanceRoom(r, Date.now());
       if (r.host === socket.id) r.host = null;
       const p = r.players.find(p => p.socket === socket.id); if (p) p.socket = null;
       broadcast(r);
@@ -101,14 +108,9 @@ export function makeServer({ port = 3000 } = {}) {
   const timer = setInterval(() => {
     const now = Date.now(); frame++;
     for (const r of rooms.values()) {
-      const elapsed = now - r.lastTick; r.lastTick = now;
       if (!r.host && r.players.every(p => !p.socket) && now - r.touched > 2 * 60 * 60 * 1000) { rooms.delete(r.code); continue; }
       if (r.phase !== 'playing') continue;
-      if (!r.host) { r.game.end += elapsed; r.game.turnAt += elapsed; if (r.game.roundEnd) r.game.roundEnd += elapsed; }
-      else {
-        tickGame(r.game, Math.min(elapsed / 1000, .06), now, r.players.filter(p => p.socket).map(p => p.id));
-        if (now >= r.game.end) r.phase = 'results';
-      }
+      advanceRoom(r, now);
       if (frame % 2 === 0 || r.phase === 'results') broadcast(r);
     }
   }, 1000 / 30);

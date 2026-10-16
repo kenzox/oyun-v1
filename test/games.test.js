@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { GAMES, createGame, inputGame, tickGame, currentPlayer, publicGame } from '../server/games.js';
 
 const players = [{ id: 'ada' }, { id: 'ege' }];
-test('six games initialize and remain serializable through an entire round', () => {
+test('all games initialize and remain serializable through an entire round', () => {
   for (const meta of GAMES) {
     const g = createGame(meta.id, players, 0);
     for (let i = 0; i < meta.duration * 30; i++) tickGame(g, 1 / 30, i * 1000 / 30);
