@@ -1,9 +1,22 @@
+import { initPool3D, inputPool3D, tickPool3D } from './pool3d.js';
+import { initRace3D, inputRace3D, tickRace3D } from './race3d.js';
+export { disposePhysics as disposeGame } from './physics.js';
 import { initExtraGame, inputExtraGame, tickExtraGame } from './extra-games.js';
 import { initCourtGame, inputCourtGame, tickCourtGame } from './court-games.js';
 import { initGolf, inputGolf, tickGolf } from './golf.js';
 import { initMoles, inputMoles, tickMoles } from './moles.js';
+import { initRace, inputRace, tickRace } from './race.js';
+import { initPool, inputPool, tickPool } from './pool.js';
+import { initTennis, inputTennis, tickTennis } from './tennis.js';
+import { initLaser, inputLaser, tickLaser } from './laser.js';
 
 export const GAMES = [
+  { id: 'pool3d', name: '3D Bilardo', category: '3D Oyunlar', min: 1, max: 8, duration: 180, icon: '●', color: '#98d9bf', description: 'Işıklı masa, gerçek top çarpışmaları.', control: 'Yön & güç', instruction: 'Yeni 3D masa: yönü ve gücü ayarla, beyaz topa vur. Renkli top +10, beyaz top −5; faulsüz top sokarsan yeniden vurursun. Nişan için 20 saniye. Topların çarpışması, yerçekimi ve bant sekmeleri fizik motoruyla hesaplanır. Klasik Cep Bilardosu rafta duruyor.' },
+  { id: 'race3d', name: '3D Araba Yarışı', category: '3D Oyunlar', min: 1, max: 8, duration: 120, icon: '⚑', color: '#a7c8ef', description: 'Takip kamerası, virajlar ve tekerlek fiziği.', control: 'Direksiyon & turbo', instruction: '600 metrelik ortak pistte dört etabı sırayla geç. Gaz ve viraj desteği otomatik; kaydırıcıyla pistteki konumunu seç. Fren ve turbo kullan, engellerden kaç. Araçlar birbirine ve bariyerlere çarpar. Takılırsan son etaba dön. İlk finişten sonra 12 saniye kalır. Bitirenlere sırayla 1000, 990…; diğerlerine metre kadar puan verilir.' },
+  { id: 'race', name: 'Salon Rallisi', category: 'Yarış', min: 1, max: 8, duration: 90, icon: '⚑', color: '#f5b77e', description: 'Üç tur, tek finiş, bol turbo!', control: 'Direksiyon & turbo', instruction: 'Herkes kendi ekranında aynı trafikte yarışır. Direksiyonu kaydır, engellerden kaç. Gaz otomatik; fren açılıp kapanır, turbo 6 saniyede dolar. Üç turu önce bitiren kazanır; ilk finişten sonra 12 saniye kalır. Bitirenlere sırayla 4000, 3900… puan; bitiremeyenlere gittikleri metre kadar puan verilir.' },
+  { id: 'pool', name: 'Cep Bilardosu', category: 'Spor', min: 1, max: 8, duration: 180, icon: '●', color: '#88d4b0', description: 'Açını bul, topu cebe gönder.', control: 'Yön & güç', instruction: 'Sırayla beyaz topa vur. Renkli her top +10, beyaz topu sokmak −5 puan; puan sıfırın altına inmez. Top sokarsan ve faul yoksa sıra sende kalır. Nişan almak için 20 saniyen var. Altı renkli top bitince masa yeniden kurulur. En yüksek puan kazanır; basitleştirilmiş cep bilardosudur.' },
+  { id: 'tennis', name: 'Kort Tenisi', category: 'Spor', min: 2, max: 8, duration: 120, icon: '◒', color: '#c2dc85', description: 'Karşıla, yön ver, sayıyı al!', control: 'Kaydır & güçlü vur', instruction: 'İki takım karşılıklı oynar. Kaydırıcıyla yukarı/aşağı hareket et; yakındaki topa otomatik vurursun. Yönü ayarla, tam zamanında güçlü vuruş yap. Çizgi dışına atan veya topu kaçıran sayı kaybeder. İlk 7 sayı kazanır; süre sonunda yüksek skor önde. Arcade kuralları: 15/30/40 ve set sistemi yoktur.' },
+  { id: 'laser', name: 'Lazer Galerisi', category: 'Nişan & fizik', min: 1, max: 8, duration: 90, icon: '⊕', color: '#a3b8fa', description: 'Nişangâh sende, hedefler hareketli.', control: 'Nişan al & ateşle', instruction: 'Telefon ekranına dokunarak nişan al, lazer düğmesiyle ateşle. Drone +10, altın hedef +25, yeşil kalkan −5 puan. Herkes her hedefe bir kez puan alabilir. Beş atıştan sonra 1,2 saniye otomatik dolum yapılır. Bu oyun 2D perspektifli bir atış galerisidir.' },
   { id: 'golf', name: 'Mini Golf', category: 'Spor', min: 1, max: 8, duration: 150, icon: '⚑', color: '#9fdb9b', description: 'Üç parkur, en az vuruş!', control: 'Nişan al & vur', instruction: 'Herkes kendi topuyla aynı anda oynar. Açı ve gücü ayarla; top durunca yeniden vur. Her parkur 45 saniye ve en fazla 8 vuruş. Tek vuruşta deliğe sokmak 80 puan; her ek vuruş ödülü 10 azaltır. Üç parkurun toplam puanı kazanır.' },
   { id: 'moles', name: 'Köstebek Avı', category: 'Parti', min: 1, max: 8, duration: 90, icon: '✹', color: '#e2bc94', description: 'Hızlı parmaklar, mutlu bahçe.', control: 'Dokuz düğme', instruction: 'Telefonundaki 3×3 bahçede köstebeklere dokun. Normal köstebek 10, altın köstebek 25 puan. Çiçeğe dokunmak 5 puan götürür; puan sıfırın altına düşmez. Her hedefe herkes bir kez puan alabilir.' },
   { id: 'sling', name: 'Sapan Savaşları', category: 'Nişan & fizik', min: 1, max: 8, duration: 120, icon: '◉', color: '#b9ec72', description: 'Ger, nişan al, kaleyi dağıt!', control: 'Çek ve bırak', instruction: 'Sıran geldiğinde telefondaki topu geriye çekip bırak. Ahşap bloklar 10, yıldızlar 30 puan. Her atıştan sonra sıra değişir.' },
@@ -40,6 +53,12 @@ export function createGame(id, players, now = Date.now()) {
   initCourtGame(g, now);
   initGolf(g, now);
   initMoles(g, now);
+  initRace(g, now);
+  initPool(g, now);
+  initTennis(g, now);
+  initLaser(g, now);
+  initPool3D(g, now);
+  initRace3D(g, now);
   return g;
 }
 
@@ -52,6 +71,12 @@ export function inputGame(g, id, input, now = Date.now()) {
   inputCourtGame(g, id, input, now);
   inputGolf(g, id, input, now);
   inputMoles(g, id, input, now);
+  inputRace(g, id, input, now);
+  inputPool(g, id, input, now);
+  inputTennis(g, id, input, now);
+  inputLaser(g, id, input, now);
+  inputPool3D(g, id, input, now);
+  inputRace3D(g, id, input, now);
   if (['sling', 'archery'].includes(g.id) && input.type === 'shoot' && currentPlayer(g) === id && !g.projectile) {
     const angle = clamp(input.angle, 12, 82) * Math.PI / 180;
     const power = clamp(input.power, .15, 1);
@@ -89,6 +114,12 @@ export function tickGame(g, dt, now = Date.now(), connected = g.ids) {
   tickCourtGame(g, dt, now, connected);
   tickGolf(g, dt, now, connected);
   tickMoles(g, dt, now);
+  tickRace(g, dt, now, connected);
+  tickPool(g, dt, now, connected);
+  tickTennis(g, dt, now, connected);
+  tickLaser(g, dt, now);
+  tickPool3D(g, dt, now, connected);
+  tickRace3D(g, dt, now, connected);
   g.tick++;
   if (['sling', 'archery'].includes(g.id)) {
     if (!g.projectile && (now - g.turnAt > 16000 || !connected.includes(currentPlayer(g)))) nextTurn(g, now);
@@ -167,11 +198,15 @@ export function publicGame(g) {
 
 // Move deadlines together while simulation is paused; never advance physics.
 export function shiftGameClock(g, elapsed) {
-  for (const key of ['start', 'end', 'turnAt', 'roundEnd', 'stageAt', 'stageEnd', 'lastShot', 'serveAt', 'spawnAt']) {
+  for (const key of ['start', 'end', 'turnAt', 'roundEnd', 'stageAt', 'stageEnd', 'lastShot', 'serveAt', 'spawnAt', 'raceEnd', 'shotAt', 'restSince']) {
     if (typeof g[key] === 'number') g[key] += elapsed;
   }
   // A phone held still before a pause must not keep pushing after resuming.
   if (g.inputs) g.inputs = {};
   if (g.controls) g.controls = {};
   if (g.moles) g.moles.forEach(m => { m.expiresAt += elapsed; });
+  if (g.racers) g.racers.forEach(r => { for (const key of ['boostUntil', 'boostReady', 'crashUntil', 'resetReady', 'reverseUntil']) if (typeof r[key] === 'number') r[key] += elapsed; if (typeof r.finishAt === 'number') r.finishAt += elapsed; r.braking = false; });
+  if (g.tennists) g.tennists.forEach(p => { p.swingUntil += elapsed; p.swingReady += elapsed; });
+  if (g.shooters) g.shooters.forEach(p => { p.readyAt += elapsed; p.flashUntil += elapsed; if (p.reloadAt) p.reloadAt += elapsed; });
+  if (g.id === 'laser') g.targets.forEach(t => { t.expiresAt += elapsed; });
 }

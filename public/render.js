@@ -1,5 +1,6 @@
 import { riverBanks, TEAM_COLORS } from './game-geometry.js';
 import { CASUAL_ART, renderCasual } from './casual-render.js';
+import { ARCADE_ART, renderArcade } from './arcade-render.js';
 export const avatars = ['🐸', '🦊', '🐼', '🐙', '🐯', '🐨', '🐵', '🐰'];
 export const memoryTiles = [
   { name: 'Mercan', symbol: '●', color: '#f5a7bb' },
@@ -11,6 +12,7 @@ export function art(id, color = '#b9ec72') {
   const start = `<svg viewBox="0 0 400 240" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><circle cx="210" cy="130" r="97" fill="${color}" opacity=".08"/><g stroke-linecap="round" stroke-linejoin="round">`;
   const shapes = {
     ...CASUAL_ART,
+    ...ARCADE_ART,
     volley: `<path d="M60 191Q190 171 340 191v30H60Z" fill="#d4af76"/><path d="M200 91v104M155 105h90m-90 18h90m-90 18h90m-70-36v44m22-44v44m22-44v44m22-44v44" stroke="#f7efdb" stroke-width="3"/><circle cx="126" cy="166" r="26" fill="#89c7f4"/><circle cx="279" cy="166" r="26" fill="#f5a7bb"/><circle cx="237" cy="62" r="26" fill="#f3dc80"/><path d="M215 50q31-4 36 32m-30-1q-2-22 30-30" stroke="#e9a269" stroke-width="4" fill="none"/><circle cx="118" cy="160" r="3" fill="#25303b"/><circle cx="134" cy="160" r="3" fill="#25303b"/><circle cx="271" cy="160" r="3" fill="#25303b"/><circle cx="287" cy="160" r="3" fill="#25303b"/>`,
     hockey: `<rect x="62" y="46" width="276" height="151" rx="35" fill="#dcecef"/><path d="M200 47v149" stroke="#d88a9e" stroke-width="3"/><circle cx="200" cy="121" r="34" stroke="#81b7cc" stroke-width="3" fill="none"/><circle cx="126" cy="107" r="22" fill="#68b0e5"/><circle cx="279" cy="150" r="22" fill="#e79cb0"/><path d="M139 120l27 26 20-6m81 22-27-14-14 4" stroke="#4e6872" stroke-width="7"/><ellipse cx="202" cy="152" rx="13" ry="8" fill="#29333c"/><path d="M64 96H51v50h13m272-50h13v50h-13" fill="none" stroke="#ac8491" stroke-width="5"/>`,
     memory: `<rect x="104" y="31" width="88" height="84" rx="20" fill="#f5a7bb"/><rect x="206" y="31" width="88" height="84" rx="20" fill="#89c7f4" opacity=".5"/><rect x="104" y="129" width="88" height="84" rx="20" fill="#b9ec72" opacity=".5"/><rect x="206" y="129" width="88" height="84" rx="20" fill="#f3d78c" opacity=".5"/><circle cx="148" cy="73" r="17" fill="#46343c"/><path d="M250 54l20 34h-40Z" fill="#2c485c"/><rect x="133" y="155" width="30" height="30" rx="4" fill="#3a4c29"/><text x="250" y="184" text-anchor="middle" font-size="44" fill="#685628">★</text><path d="M83 44l-12-10m11 34-17 1m253-18 13-9" stroke="#f3d78c" stroke-width="4"/>`,
@@ -126,7 +128,7 @@ export function renderBoard(canvas, state) {
     rect(c, 15, 12, 245, 38, '#191f33e8', 10); label(c, `ETAP ${g.wave} · TAKIM ${g.teamScore}`, 30, 38, 18, '#ccd7ff', 'left');
     rect(c, 735, 12, 250, 38, '#191f33e8', 10); label(c, `KALKAN ${'♥'.repeat(g.shields)}${'♡'.repeat(6 - g.shields)}`, 970, 38, 18, '#f5a7bb', 'right');
   }
-  if (g.teams) {
+  if (['volley', 'hockey'].includes(g.id)) {
     if (g.id === 'volley') {
       rect(c, 0, 0, W, H, '#9bd0d5'); circle(c, 840, 110, 47, '#fff1b2');
       rect(c, 0, 370, 1000, 130, '#74aeb7'); rect(c, 0, 500, 1000, 60, '#e1c18c');
@@ -155,6 +157,7 @@ export function renderBoard(canvas, state) {
     }
   }
   renderCasual(c, state);
+  renderArcade(c, state);
   if (state.pauseReason) {
     rect(c, 0, 0, W, H, '#151922c9');
     label(c, 'KISA BİR MOLA', 500, 260, 36, '#b9ec72');

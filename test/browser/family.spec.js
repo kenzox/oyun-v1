@@ -27,6 +27,45 @@ test('TV creates a room, two phones join, all registered games start, pause and 
     await page.getByRole('button', { name: 'Oyunu başlat' }).click();
     await expect(page.locator('#board')).toBeVisible();
     await expect(phones[0].locator('#timer')).toBeVisible();
+    if (id === 'pool3d' || id === 'race3d') {
+      await expect(page.locator('#three-stage')).toHaveAttribute('data-state', 'ready');
+      await expect(page.locator('#board')).toHaveAttribute('data-renderer', 'three');
+    }
+    if (id === 'race' || id === 'race3d') {
+      await expect(phones[0].locator('#race-status')).toContainText(id === 'race3d' ? '1/4 etap' : '1/3 tur');
+      await phones[0].getByRole('button', { name: 'Fren: kapalı' }).click();
+      await expect(phones[0].getByRole('button', { name: 'Fren: açık' })).toHaveAttribute('aria-pressed', 'true');
+      await phones[0].getByRole('button', { name: 'Turbo' }).click();
+      await expect(phones[0].getByRole('button', { name: 'Turbo:' })).toBeDisabled();
+      if (id === 'race3d') {
+        await phones[0].getByRole('button', { name: '2 saniye geri git' }).click();
+        await phones[0].getByRole('button', { name: 'Son etaba dön' }).click();
+      }
+      await phones[0].locator('#race-steer').focus(); await phones[0].locator('#race-steer').press('ArrowLeft');
+    }
+    if (id === 'pool' || id === 'pool3d') {
+      await expect(phones[1].getByRole('button', { name: 'Istakayla vur' })).toBeDisabled();
+      await phones[0].getByRole('button', { name: 'Istakayla vur' }).click();
+      await expect(phones[0].locator('#pool-status')).toContainText('Toplar hareket ediyor');
+      await expect(phones[0].getByRole('button', { name: 'Istakayla vur' })).toBeDisabled();
+      await expect(phones[0].locator('#pool-status')).not.toContainText('Toplar hareket ediyor', { timeout: 18000 });
+    }
+    if (id === 'tennis') {
+      await expect(phones[0].locator('.team-identity')).toContainText('Mavi takım');
+      await expect(phones[1].locator('.team-identity')).toContainText('Mercan takım');
+      await phones[0].locator('#tennis-position').focus(); await phones[0].locator('#tennis-position').press('ArrowRight');
+      await phones[0].getByRole('button', { name: 'Güçlü vuruş' }).click();
+      await expect(phones[0].getByRole('button', { name: 'Güçlü vuruş' })).toBeDisabled();
+    }
+    if (id === 'laser') {
+      await expect(phones[0].locator('#laser-pad')).toBeVisible();
+      await phones[0].locator('#laser-pad').click();
+      await phones[0].getByRole('button', { name: 'Lazeri ateşle' }).click();
+      await expect(phones[0].locator('#laser-status')).toContainText('4/5 enerji');
+      await phones[0].getByRole('button', { name: 'Doldur' }).click();
+      await expect(phones[0].locator('#laser-status')).toContainText('doluyor');
+      await expect(phones[0].locator('#laser-status')).toContainText('5/5 enerji');
+    }
     if (id === 'golf') {
       await phones[0].getByRole('button', { name: 'Topa vur' }).click();
       await expect(phones[0].getByRole('button', { name: 'Topa vur' })).toBeDisabled();

@@ -1,3 +1,6 @@
+import { THREE_GAMES } from './three-rules.js';
+import { updateThreeView, disposeThreeView } from './three-view.js';
+import { arcadeControls, updateArcadeControls, arcadeClick, arcadeInput, bindArcadeControls } from './arcade-controls.js';
 import { art, avatars, memoryTiles, renderBoard } from './render.js';
 import { TEAM_COLORS, TEAM_NAMES } from './game-geometry.js';
 import { GOLF_COURSES, GOLF_LIMIT, golfMoving } from './golf-courses.js';
@@ -48,7 +51,7 @@ function results(mobile = false) {
 
 function gameView() {
   const g = meta();
-  return `<div class="game-top"><button class="secondary" data-action="exit-game" aria-label="Oyundan çık">←</button><div><div class="eyebrow">${g.category}</div><h1>${g.name}</h1></div><div class="timer" id="timer"></div><button class="secondary" data-action="pause" id="pause-button">${state.paused ? '▶ Devam et' : 'Ⅱ Duraklat'}</button></div><div class="game-message"><strong id="turn-message"></strong><span id="notice"></span></div><canvas class="board" id="board" aria-label="${g.name} ortak oyun ekranı"></canvas><p class="instruction">${g.instruction}</p><div class="scores" id="scores"></div>${g.id === 'draw' ? '<div class="guess-list" id="guesses"></div>' : ''}`;
+  return `<div class="game-top"><button class="secondary" data-action="exit-game" aria-label="Oyundan çık">←</button><div><div class="eyebrow">${g.category}</div><h1>${g.name}</h1></div><div class="timer" id="timer"></div><button class="secondary" data-action="pause" id="pause-button">${state.paused ? '▶ Devam et' : 'Ⅱ Duraklat'}</button></div><div class="game-message"><strong id="turn-message"></strong><span id="notice"></span></div>${THREE_GAMES.includes(g.id) ? `<div class="three-stage" id="three-stage" aria-label="${g.name} ortak oyun ekranı"></div>` : `<canvas class="board" id="board" aria-label="${g.name} ortak oyun ekranı"></canvas>`}<p class="instruction">${g.instruction}</p><div class="scores" id="scores"></div>${g.id === 'draw' ? '<div class="guess-list" id="guesses"></div>' : ''}`;
 }
 
 function renderHost() {
@@ -69,7 +72,7 @@ function renderMobile() {
     root.innerHTML = mobileShell(`<div class="waiting"><div class="waiting-art">${avatars[p?.avatar || 0]}</div><div class="eyebrow">${esc(p?.name)}, hoş geldin!</div><h2>${state.phase === 'lobby' ? 'Herkes hazır mı?' : 'Sıradaki tur senin.'}</h2><p class="sub">${state.phase === 'lobby' ? 'Gözler TV’de! Oyun oradan başlayacak.<br>Telefonun artık senin kumandan.' : 'Bu tur devam ediyor. Yeni oyunda otomatik olarak katılacaksın.'}</p><div class="mobile-players">${state.players.map(p => `<span class="avatar" style="--pcolor:${p.color}" title="${esc(p.name)}">${avatars[p.avatar]}</span>`).join('')}</div><div class="control-info">Sıradaki oyun: <strong>${meta().name}</strong></div></div>`); return;
   }
   const g = state.game, isTurn = g.ids[g.turn] === myId;
-  let controls = '';
+  let controls = arcadeControls(g, myId);
   if (g.id === 'golf') controls = `<div class="control-info" id="golf-status" role="status" aria-live="polite"></div><canvas class="control-pad" id="golf-pad" aria-label="Topu gitmesini istediğin yönün tersine çekip bırak"></canvas><p class="pad-label">Topu ters yöne çekip bırak veya aşağıdan nişan al.</p><div class="shot-settings"><label for="golf-angle">Yön: <output id="golf-angle-value">0°</output></label><input id="golf-angle" type="range" min="-180" max="180" value="0"/><p class="pad-label">0° sağ · 90° yukarı · −90° aşağı · 180° sol</p><label for="golf-power">Güç: <output id="golf-power-value">75%</output></label><input id="golf-power" type="range" min="8" max="100" value="75"/><button class="primary" data-action="putt">Topa vur ⚑</button></div>`;
   if (g.id === 'moles') controls = `<div class="control-info">🐹 +10 · 🌟 +25 · 🌼 −5<br>Her hedefe herkes bir kez puan alabilir.</div><div id="mole-feedback" class="mole-feedback" role="status" aria-live="polite">Köstebekleri bekle, çiçekleri koru.</div><div class="mole-controls">${Array.from({ length: 9 }, (_, i) => `<button class="mole-button" data-mole="${i}" data-serial="0" aria-label="${i + 1}: Boş yuva" disabled><span class="mole-symbol"></span><small>${i + 1}</small></button>`).join('')}</div>`;
   if (g.id === 'river') {
@@ -83,7 +86,8 @@ function renderMobile() {
     if (g.id === 'volley') {
       const athlete = g.athletes.find(p => p.id === myId);
       controls += `<label for="court-position">Sahadaki konumun</label><input class="paddle-input" id="court-position" type="range" min="0" max="1" step="0.01" value="${(athlete.target - 35 - team * 500) / 430}"/><button class="primary jump-button" data-action="jump">↑ Zıpla!</button><p class="pad-label">Top yaklaşınca altına geç ve zıpla. Klavyede boşluk tuşunu da kullanabilirsin.</p>`;
-    } else controls += `<canvas class="control-pad" id="hockey-pad" aria-label="Hokey oyuncusunu hareket ettirmek için istediğin yöne sürükle"></canvas><p class="pad-label">Çubuğu sürükle. Diske dokunarak rakip kaleye vur!</p>`;
+    } else if (g.id === 'tennis') controls += arcadeControls(g, myId);
+    else controls += `<canvas class="control-pad" id="hockey-pad" aria-label="Hokey oyuncusunu hareket ettirmek için istediğin yöne sürükle"></canvas><p class="pad-label">Çubuğu sürükle. Diske dokunarak rakip kaleye vur!</p>`;
   }
   if (['sling', 'archery'].includes(g.id)) controls = `<div class="control-info ${isTurn ? 'active' : ''}" id="mobile-turn"></div><canvas class="control-pad" id="aim-pad" aria-label="Topu geriye çekip bırakarak atış yap"></canvas><p class="pad-label">Topu aşağı ve sola çekip bırak veya açı ve gücü aşağıdan ayarla.</p><div class="shot-settings"><label for="shot-angle">Açı: <output id="angle-value">45°</output></label><input id="shot-angle" type="range" min="12" max="82" value="45"/><label for="shot-power">Güç: <output id="power-value">35%</output></label><input id="shot-power" type="range" min="15" max="100" value="35"/><button class="primary" data-action="accessible-shot">Atış yap ↗</button></div>`;
   if (g.id === 'snake') controls = `<div class="control-info">Elmalara koş! Duvara çarpsan da oyun devam eder.</div><div class="dpad"><button class="up" data-direction="up" aria-label="Yukarı">↑</button><button class="left" data-direction="left" aria-label="Sol">←</button><button class="right" data-direction="right" aria-label="Sağ">→</button><button class="down" data-direction="down" aria-label="Aşağı">↓</button></div><p class="pad-label">Gözün TV’de, parmakların burada.</p>`;
@@ -97,7 +101,7 @@ function renderMobile() {
 function render(force = false) {
   const g = state?.game;
   const key = `${role}|${state?.code}|${state?.phase}|${state?.selected}|${state?.pauseReason}|${role === 'player' ? `${g?.turn}|${g?.round}|${g?.stage}|${g?.ids.includes(myId)}|${state?.players.map(p => p.id).join()}|${state?.hostOnline}` : ''}|${online}`;
-  if (force || key !== viewKey) { cleanControl(); cleanControl = () => {}; viewKey = key; role === 'host' ? renderHost() : renderMobile(); }
+  if (force || key !== viewKey) { disposeThreeView(); cleanControl(); cleanControl = () => {}; viewKey = key; role === 'host' ? renderHost() : renderMobile(); }
   update();
 }
 
@@ -111,6 +115,7 @@ function update() {
   const g = state.game; if (!g || state.phase !== 'playing') return;
   if ($('#timer')) $('#timer').textContent = time((g.id === 'draw' ? Math.min(g.roundEnd, g.end) : ['memory', 'golf'].includes(g.id) ? Math.min(g.stageEnd, g.end) : g.end) - state.serverNow);
   if ($('#notice')) $('#notice').textContent = g.notice;
+  updateArcadeControls(state, myId, online);
   const isTurn = g.ids[g.turn] === myId;
   if ($('#turn-message')) $('#turn-message').textContent = ['sling', 'archery'].includes(g.id) ? `Sıra ${name(g.ids[g.turn])} adlı oyuncuda · ${Math.max(0, 16 - Math.floor((state.serverNow - g.turnAt) / 1000))} sn` : g.id === 'draw' ? `${name(g.ids[g.turn])} çiziyor · ${g.round}. çizim` : g.id === 'balance' ? 'Hep birlikte aynı hedefe!' : 'Hazırsan, en yüksek puan senin!';
   if ($('#mobile-turn')) $('#mobile-turn').textContent = isTurn ? g.projectile ? 'Atışın yolda! TV’ye bak.' : 'Sıra sende! Nişan al ve bırak.' : `${name(g.ids[g.turn])} atış yapıyor. Sıranı bekle.`;
@@ -146,6 +151,9 @@ function update() {
   if ($('#turn-message') && g.teams) $('#turn-message').textContent = `Mavi ${g.teamScores[0]} — ${g.teamScores[1]} Mercan${state.serverNow < g.serveAt ? ' · Hazırlanın!' : ''}`;
   if ($('#turn-message') && g.id === 'golf') $('#turn-message').textContent = `${g.round}/${GOLF_COURSES.length} · ${GOLF_COURSES[g.round - 1].name} · ${g.golfers.filter(b => b.sunk).length}/${g.ids.length} top delikte`;
   if ($('#turn-message') && g.id === 'moles') $('#turn-message').textContent = 'Köstebek +10 · Altın +25 · Çiçek −5';
+  if ($('#turn-message') && ['race', 'race3d'].includes(g.id)) $('#turn-message').textContent = g.raceEnd !== null ? `Finişe son ${Math.max(0, Math.ceil((g.raceEnd - state.serverNow) / 1000))} saniye` : g.id === 'race3d' ? state.serverNow < g.serveAt ? `Başlangıç: ${Math.ceil((g.serveAt - state.serverNow) / 1000)}` : '4 etap · 600 metre · İlk finiş kazanır' : '3 tur · 3000 metre · İlk finiş kazanır';
+  if ($('#turn-message') && ['pool', 'pool3d'].includes(g.id)) $('#turn-message').textContent = g.rolling ? 'Toplar hareket ediyor…' : `Sıra ${name(g.ids[g.turn])} adlı oyuncuda · ${Math.max(0, Math.ceil((20000 - state.serverNow + g.turnAt) / 1000))} sn`;
+  if ($('#turn-message') && g.id === 'laser') $('#turn-message').textContent = 'Drone +10 · Altın +25 · Kalkan −5';
   if ($('#turn-message') && state.pauseReason) $('#turn-message').textContent = 'Oyun duraklatıldı · Süre ve puanlar korunuyor';
   if ($('#scores')) $('#scores').innerHTML = state.players.filter(p => g.ids.includes(p.id)).map(p => playerHTML(p, g.scores[p.id])).join('');
   if ($('#secret-word') && secret?.round === g.round && isTurn) $('#secret-word').textContent = secret.word;
@@ -153,7 +161,8 @@ function update() {
     $('#guesses').innerHTML = g.guesses.map(item => `<div class="guess-item ${item.correct ? 'correct' : ''}"><strong>${esc(name(item.id))}:</strong> ${esc(item.text)}</div>`).join('');
     if ($('#guess-form') && g.guessed.includes(myId)) { $('#guess-form').innerHTML = '<div class="control-info active">Bildin! Diğer oyuncuları bekliyoruz. ✨</div>'; }
   }
-  renderBoard($('#board'), state);
+  if (THREE_GAMES.includes(g.id)) updateThreeView($('#three-stage'), state);
+  else renderBoard($('#board'), state);
 }
 
 function connect() {
@@ -200,6 +209,7 @@ root.addEventListener('click', async e => {
   if (button.dataset.tile !== undefined) { send({ type: 'memory-tap', tile: Number(button.dataset.tile), round: state.game.round }); return; }
   if (button.dataset.mole !== undefined) { send({ type: 'whack', tile: Number(button.dataset.mole), serial: Number(button.dataset.serial) }); return; }
   if (button.dataset.direction) { send({ type: 'direction', direction: button.dataset.direction }); return; }
+  if (arcadeClick(button, state, myId, send)) return;
   const action = button.dataset.action;
   if (action === 'create') {
     button.disabled = true;
@@ -221,6 +231,7 @@ root.addEventListener('click', async e => {
 
 root.addEventListener('change', e => { if (e.target.id === 'network') { base = e.target.value; save('salon-base', base); render(true); } });
 root.addEventListener('input', e => {
+  if (arcadeInput(e.target, state, send)) return;
   const id = e.target.id;
   if (id === 'paddle') send({ type: 'paddle', x: Number(e.target.value) });
   if (id === 'ship-position') send({ type: 'steer', x: Number(e.target.value) });
@@ -243,6 +254,7 @@ function bindControls() {
   const golf = $('#golf-pad');
   const removers = [];
   const listen = (target, name, fn, options) => { target.addEventListener(name, fn, options); removers.push(() => target.removeEventListener(name, fn, options)); };
+  bindArcadeControls(listen, () => state, send);
   if (aim || balance || hockey || golf) {
     const canvas = aim || balance || hockey || golf; canvas.width = 600; canvas.height = 450; const c = canvas.getContext('2d'); let point = null, active = false, tilt = { x: 0, y: 0 };
     function paint() {

@@ -5,7 +5,7 @@ import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import QRCode from 'qrcode';
-import { GAMES, COLORS, createGame, inputGame, publicGame, currentPlayer } from './games.js';
+import { GAMES, COLORS, createGame, inputGame, publicGame, currentPlayer, disposeGame } from './games.js';
 import { advanceRoom, pauseReason } from './session.js';
 
 const token = () => randomBytes(24).toString('hex');
@@ -15,6 +15,7 @@ export function makeServer({ port = 3000 } = {}) {
   const io = new Server(http, { maxHttpBufferSize: 16000 });
   const rooms = new Map();
   app.use(express.json({ limit: '8kb' }));
+  app.use('/vendor/three', express.static(fileURLToPath(new URL('../node_modules/three/build/', import.meta.url))));
   app.use(express.static(fileURLToPath(new URL('../public', import.meta.url))));
   const addresses = () => [...new Set(Object.values(networkInterfaces()).flat().filter(n => n && n.family === 'IPv4' && !n.internal).map(n => `http://${n.address}:${http.address()?.port || port}`))];
   app.get('/api/config', (_req, res) => res.json({ games: GAMES, addresses: addresses() }));
@@ -77,10 +78,11 @@ export function makeServer({ port = 3000 } = {}) {
         if (r.phase === 'playing') return ack({ error: 'Yeni oyun için önce bu turdan çıkın.' });
         const meta = GAMES.find(g => g.id === r.selected); const active = r.players.filter(p => p.socket);
         if (active.length < meta.min) return ack({ error: `Bu oyun için en az ${meta.min} bağlı oyuncu gerekiyor.` });
+        disposeGame(r.game);
         r.game = createGame(r.selected, active); r.phase = 'playing'; r.paused = false; r.lastTick = Date.now();
       }
       if (data.type === 'pause' && r.phase === 'playing' && typeof data.paused === 'boolean') r.paused = data.paused;
-      if (data.type === 'lobby') { r.phase = 'lobby'; r.game = null; r.paused = false; }
+      if (data.type === 'lobby') { disposeGame(r.game); r.phase = 'lobby'; r.game = null; r.paused = false; }
       if (data.type === 'remove' && r.phase === 'lobby') {
         const p = r.players.find(p => p.id === data.id);
         if (p && !p.socket) r.players = r.players.filter(player => player.id !== p.id);
@@ -108,13 +110,13 @@ export function makeServer({ port = 3000 } = {}) {
   const timer = setInterval(() => {
     const now = Date.now(); frame++;
     for (const r of rooms.values()) {
-      if (!r.host && r.players.every(p => !p.socket) && now - r.touched > 2 * 60 * 60 * 1000) { rooms.delete(r.code); continue; }
+      if (!r.host && r.players.every(p => !p.socket) && now - r.touched > 2 * 60 * 60 * 1000) { disposeGame(r.game); rooms.delete(r.code); continue; }
       if (r.phase !== 'playing') continue;
       advanceRoom(r, now);
       if (frame % 2 === 0 || r.phase === 'results') broadcast(r);
     }
   }, 1000 / 30);
-  const close = () => new Promise(resolve => { clearInterval(timer); io.close(() => { http.close(() => resolve()); }); });
+  const close = () => new Promise(resolve => { clearInterval(timer); for (const r of rooms.values()) disposeGame(r.game); io.close(() => { http.close(() => resolve()); }); });
   return { app, http, io, rooms, close };
 }
 

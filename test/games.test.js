@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GAMES, createGame, inputGame, tickGame, currentPlayer, publicGame } from '../server/games.js';
+import { GAMES, createGame, inputGame, tickGame, currentPlayer, publicGame, disposeGame } from '../server/games.js';
 
 const players = [{ id: 'ada' }, { id: 'ege' }];
 test('all games initialize and remain serializable through an entire round', () => {
@@ -11,7 +11,7 @@ test('all games initialize and remain serializable through an entire round', () 
       if (typeof value === 'number') assert.ok(Number.isFinite(value), `${meta.id}: non-finite state`);
       return value;
     });
-    assert.equal(Object.keys(g.scores).length, 2);
+    assert.equal(Object.keys(g.scores).length, 2); disposeGame(g);
   }
 });
 test('sling permits only the active player and one projectile at a time', () => {
@@ -120,5 +120,5 @@ test('balance ignores stale inputs and disconnected controllers', () => {
 });
 test('all game engines support eight players', () => {
   const group = Array.from({ length: 8 }, (_, i) => ({ id: `p${i}` }));
-  for (const meta of GAMES) { const g = createGame(meta.id, group, 0); for (let i = 0; i < 60; i++) tickGame(g, 1 / 30, i * 1000 / 30); assert.equal(Object.keys(g.scores).length, 8); }
+  for (const meta of GAMES) { const g = createGame(meta.id, group, 0); for (let i = 0; i < 60; i++) tickGame(g, 1 / 30, i * 1000 / 30); assert.equal(Object.keys(g.scores).length, 8); disposeGame(g); }
 });

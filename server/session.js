@@ -1,4 +1,4 @@
-import { shiftGameClock, tickGame } from './games.js';
+import { shiftGameClock, tickGame, disposeGame } from './games.js';
 
 export function pauseReason(room) {
   if (room.phase !== 'playing') return null;
@@ -17,5 +17,5 @@ export function advanceRoom(room, now) {
     return;
   }
   tickGame(room.game, Math.min(elapsed / 1000, .06), now, room.players.filter(p => p.socket).map(p => p.id));
-  if (now >= room.game.end || room.game.finished) room.phase = 'results';
+  if (now >= room.game.end || room.game.finished) { room.phase = 'results'; disposeGame(room.game); }
 }
