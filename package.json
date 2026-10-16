@@ -1,0 +1,23 @@
+{
+  "name": "salon-oyun",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server/index.js",
+    "start": "node server/index.js",
+    "test": "node --test test/*.test.js",
+    "test:e2e": "playwright test",
+    "check": "node --check server/index.js && node --check server/games.js && node --check public/app.js && node --check public/render.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1",
+    "@playwright/test": "^1.56.0"
+  },
+  "engines": { "node": ">=22" }
+}
